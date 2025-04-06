@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "description": "a tool to fetch Steam screenshots in high quality",
-  "main": "server7.js",
+  "main": "server7.mjs",
   "scripts": {
     "start": "node server7.mjs"
   },
