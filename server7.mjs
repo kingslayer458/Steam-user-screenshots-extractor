@@ -1,8 +1,6 @@
 import express from "express";
 import cors from "cors";
 import fetch from "node-fetch";
-import path from "path";
-import { fileURLToPath } from "url";
 
 const app = express();
 const PORT = 3000;
@@ -573,10 +571,10 @@ app.get("/screenshot/:id", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch screenshot" });
     }
 });
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-app.use(express.static(path.join(__dirname, "public")));
+// Add this near your other routes
+app.get("/custom-page", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index5.html"));
+});
 // Start the server
 app.listen(PORT, () => {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
