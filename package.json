@@ -5,7 +5,7 @@
   "description": "a tool to fetch Steam screenshots in high quality",
   "main": "server7.js",
   "scripts": {
-    "start": "node server7.js"
+    "start": "node server7.mjs"
   },
   "dependencies": {
     "express": "^4.18.2",
