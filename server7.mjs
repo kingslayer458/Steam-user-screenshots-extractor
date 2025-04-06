@@ -450,9 +450,9 @@ async function getAllScreenshots(steamID) {
     }
 }
 
-// Root endpoint
+//root endpoint
 app.get("/", (req, res) => {
-    res.send("Steam Screenshots API is running. Use /screenshots/:steamID to fetch ALL screenshots in highest quality.");
+    res.sendFile(path.join(__dirname, "public", "index5.html"));
 });
 
 // API Endpoint to get screenshots with quality options
