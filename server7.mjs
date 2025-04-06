@@ -3,22 +3,17 @@ import cors from "cors";
 import fetch from "node-fetch";
 import path from "path";
 import { fileURLToPath } from "url";
+
 // ES modules fix for __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Serve static files from the public directory
-app.use(express.static(path.join(__dirname, "public")));
-
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "public", "index5.html"));
-});
 
 const app = express();
 const PORT = 3000;
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, "public")));
 
 // Helper function with retry logic
 async function fetchWithRetry(url, options, maxRetries = 3) {
@@ -450,7 +445,48 @@ async function getAllScreenshots(steamID) {
     }
 }
 
-//root endpoint
+// Define extractionMethods array for the /screenshot/:id endpoint
+const extractionMethods = [
+    // Method 1: Original-size image from meta tag (highest quality)
+    function() {
+        const regex = /<meta property="og:image" content="([^"]+)">/;
+        const match = this.html.match(regex);
+        return match ? match[1] : null;
+    },
+    // Method 2: image_src meta tag (reliable, often full size)
+    function() {
+        const regex = /<link rel="image_src" href="([^"]+)">/;
+        const match = this.html.match(regex);
+        return match ? match[1] : null;
+    },
+    // Method 3: ActualMedia ID with full size parameter
+    function() {
+        const regex = /<img[^>]+id="ActualMedia"[^>]+src="([^"]+)"/;
+        const match = this.html.match(regex);
+        if (match) {
+            let url = match[1];
+            if (!url.includes('?')) {
+                url = `${url}?imw=5000&imh=5000&ima=fit&impolicy=Letterbox`;
+            }
+            return url;
+        }
+        return null;
+    },
+    // Method 4: Extract from JavaScript
+    function() {
+        const jsRegex = /ScreenshotImage[^"]+"([^"]+)"/;
+        const jsMatch = this.html.match(jsRegex);
+        if (jsMatch) return jsMatch[1];
+        
+        const cfRegex = /(https:\/\/[^"]+\.cloudfront\.net\/[^"]+\.jpg)/;
+        const cfMatch = this.html.match(cfRegex);
+        if (cfMatch) return cfMatch[1];
+        
+        return null;
+    }
+];
+
+// Root endpoint
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "index5.html"));
 });
@@ -527,11 +563,12 @@ app.get("/screenshot/:id", async (req, res) => {
         
         const html = await response.text();
         
-        
+        // Provide the html context for the extraction methods
+        const context = { html };
         
         let imageUrl = null;
         for (const method of extractionMethods) {
-            imageUrl = method();
+            imageUrl = method.call(context);
             if (imageUrl) break;
         }
         
@@ -582,6 +619,16 @@ app.get("/screenshot/:id", async (req, res) => {
         console.error("Error fetching screenshot:", error);
         res.status(500).json({ error: "Failed to fetch screenshot" });
     }
+});
+
+// Add this near your other routes
+app.get("/custom-page", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index5.html"));
+});
+
+// Fallback route for any other requests to serve the main page
+app.get("*", (req, res) => {
+    res.sendFile(path.join(__dirname, "public", "index5.html"));
 });
 
 // Start the server
